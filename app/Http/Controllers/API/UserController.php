@@ -38,7 +38,7 @@ class UserController extends Controller
             $tokenResult = $user->createToken('authToken')->plainTextToken;
 
             return ResponseFormatter::success([
-                'access_token' => $tokenResult,
+                'token' => $tokenResult,
                 'token_type' => 'Bearer',
                 'user' => $user
             ], 'User Registered');
@@ -74,7 +74,7 @@ class UserController extends Controller
 
             $tokenResult = $user->createToken('authToken')->plainTextToken;
             return ResponseFormatter::success([
-                'access_token' => $tokenResult,
+                'token' => $tokenResult,
                 'token_type' => 'Bearer',
                 'user' => $user
             ], 'Authenticated');

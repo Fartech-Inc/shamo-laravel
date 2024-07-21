@@ -6,11 +6,13 @@ use App\Filament\Resources\ProductGalleryResource\Pages;
 use App\Filament\Resources\ProductGalleryResource\RelationManagers;
 use App\Models\ProductGallery;
 use Filament\Forms;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,8 +32,13 @@ class ProductGalleryResource extends Resource
                 ->relationship('product', 'name')
                 ->required()
                 ->label('Product Name'),
-                TextInput::make('url')
-                ->label('url'),
+                // TextInput::make('url')
+                // ->label('url'),
+                FileUpload::make('url')
+                ->label('Upload Gambar Gallery')
+                ->disk('public')
+                ->directory('product')
+                ->required(),
             ]);
     }
 
@@ -41,9 +48,11 @@ class ProductGalleryResource extends Resource
             ->columns([
                 TextColumn::make('product.name')
                 ->label('Product Name'),
-                TextColumn::make('url')
-                ->label('url')
-                ->url(fn ($record) => $record->url, true),
+                // TextColumn::make('url')
+                // ->label('url')
+                // ->url(fn ($record) => $record->url, true),
+                ImageColumn::make('url')
+                ->label('Gambar Gallery Product'),
             ])
             ->filters([
                 //

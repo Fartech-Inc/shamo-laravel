@@ -29,3 +29,6 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::get('transactions', [TransactionController::class, 'all']);
     Route::post('checkout', [TransactionController::class, 'checkout']);
 });
+
+Route::post('midtrans/callback', [TransactionController::class, 'midtransCallback']);
+

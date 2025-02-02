@@ -16,6 +16,7 @@ class Transaction extends Model
         'total_price',
         'shipping_price',
         'status',
+        'midtrans_booking_code'
     ];
 
     public function users()

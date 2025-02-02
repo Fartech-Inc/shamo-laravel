@@ -64,58 +64,61 @@ class TransactionController extends Controller
     }
 
     public function checkout(Request $request)
-    {
-        $request->validate([
-            'items' => 'required|array',
-            'items.*.id' => 'exists:products,id',
-            'total_price' => 'required',
-            'shipping_price' => 'required',
-            // 'status' => 'required|in:PENDING,SUCCESS,CANCELLED,FAILED,SHIPPING,SHIPPED'
-        ]);
+{
+    $request->validate([
+        'items' => 'required|array',
+        'items.*.id' => 'exists:products,id',
+        'total_price' => 'required|numeric',
+        'shipping_price' => 'required|numeric',
+    ], [
+        'items.*.id.exists' => 'Produk dengan ID :input tidak ditemukan.',
+        'total_price.required' => 'Total harga harus diisi.',
+        'shipping_price.required' => 'Biaya pengiriman harus diisi.',
+    ]);
 
-        $transaction = Transaction::create([
+    $transaction = Transaction::create([
+        'users_id' => Auth::user()->id,
+        'address' => $request->address,
+        'total_price' => $request->total_price,
+        'shipping_price' => $request->shipping_price,
+        'status' => 'PENDING',
+    ]);
+
+    foreach ($request->items as $product) {
+        TransactionItem::create([
             'users_id' => Auth::user()->id,
-            'address' => $request->address,
-            'total_price' => $request->total_price,
-            'shipping_price' => $request->shipping_price,
-            'status' => 'PENDING',
+            'products_id' => $product['id'],
+            'transactions_id' => $transaction->id,
+            'quantity' => $product['quantity']
         ]);
-
-        foreach ($request->items as $product) {
-            TransactionItem::create([
-                'users_id' => Auth::user()->id,
-                'products_id' => $product['id'],
-                'transactions_id' => $transaction->id,
-                'quantity' => $product['quantity']
-            ]);
-        }
-
-        // Konfigurasi data untuk Midtrans
-        $midtransPayload = [
-            'transaction_details' => [
-                'order_id' => $transaction->id,
-                'gross_amount' => (int) $transaction->total_price,
-            ],
-            'customer_details' => [
-                'first_name' => Auth::user()->name,
-                'email' => Auth::user()->email,
-            ],
-            'item_details' => array_map(function ($item) {
-                return [
-                    'id' => $item['id'],
-                    'price' => $item['price'],
-                    'quantity' => $item['quantity'],
-                    'name' => $item['name'],
-                ];
-            }, $request->items),
-        ];
-
-        $snapToken = Snap::getSnapToken($midtransPayload);
-        $transaction->midtrans_booking_code = $snapToken;
-        $transaction->save();
-
-        return ResponseFormatter::success($transaction, 'Transaksi berhasil dibuat, lanjutkan ke pembayaran.');
     }
+
+    // Konfigurasi data untuk Midtrans
+    $midtransPayload = [
+        'transaction_details' => [
+            'order_id' => $transaction->id,
+            'gross_amount' => (int) $transaction->total_price,
+        ],
+        'customer_details' => [
+            'first_name' => Auth::user()->name,
+            'email' => Auth::user()->email,
+        ],
+    ];
+
+    // Dapatkan Snap Token dari Midtrans
+    $snapToken = Snap::getSnapToken($midtransPayload);
+    $transaction->midtrans_booking_code = $snapToken;
+    $transaction->save();
+
+    // Buat Payment URL
+    $paymentUrl = "https://app.sandbox.midtrans.com/snap/v2/vtweb/" . $snapToken;
+
+    return ResponseFormatter::success([
+        'transaction' => $transaction,
+        'payment_url' => $paymentUrl
+    ], 'Transaksi berhasil dibuat, lanjutkan ke pembayaran.');
+}
+
 
     public function midtransCallback(Request $request)
     {
